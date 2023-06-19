@@ -1,9 +1,13 @@
 /**
  * @name GameZen
  * @author Théo EwzZer
+ * @authorId 384009727253807105
  * @authorLink https://github.com/TheoEwzZer
- * @description Automatically activates Do Not Disturb mode when Valorant is launched.
- * @version 0.0.1
+ * @description Automatically activates Do Not Disturb mode when a game is launched.
+ * @donate https://www.paypal.me/TheoEwzZer
+ * @source https://github.com/TheoEwzZer/GameZen
+ * @updateUrl https://raw.githubusercontent.com/TheoEwzZer/GameZen/main/GameZen.plugin.js
+ * @version 0.0.2
  */
 
 /**
@@ -31,7 +35,7 @@ const UserSettingsProtoUtils = BdApi.Webpack.getModule(
   { first: true, searchExports: true }
 );
 
-const Settings = { gameName: "VALORANT" };
+const Settings = { gameName: "Game Name" };
 
 module.exports = class GameZen {
   /**
@@ -64,7 +68,7 @@ module.exports = class GameZen {
   }
 
   /**
-   * Activates Do Not Disturb mode when Valorant is launched.
+   * Activates Do Not Disturb mode when a game is launched.
    */
   start() {
     Object.assign(Settings, BdApi.loadData(this.meta.name, "settings"));
