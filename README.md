@@ -15,7 +15,7 @@
 3. In Discord, go to your BetterDiscord settings and select the Plugins tab.
 4. At the top click the Open Plugins Folder button.
 5. Drag and drop, or move, the plugin you downloaded into this folder.
-6. Go back to your Plugins pages and enable your plugin or theme.
+6. Go back to your Plugins pages and enable your plugin.
 
 ## Usage
 
