@@ -47,7 +47,7 @@ const ERRORS = {
   ERROR_UPDATING_USER_STATUS_TO_DND: "Error updating user status to DND:",
 };
 
-const Settings = { gameName: "Game Name" };
+const SETTINGS = { gameName: "Game Name" };
 
 module.exports = class GameZen {
   /**
@@ -83,14 +83,14 @@ module.exports = class GameZen {
    * Activates Do Not Disturb mode when a game is launched.
    */
   start() {
-    Object.assign(Settings, BdApi.loadData(this.meta.name, "settings"));
+    Object.assign(SETTINGS, BdApi.loadData(this.meta.name, "settings"));
     this.currentUserStatus = this.currentStatus();
     this.getLocalPresence =
       BdApi.findModuleByProps("getLocalPresence").getLocalPresence;
 
     this.intervalId = setInterval(() => {
       for (const x in this.getLocalPresence().activities) {
-        if (this.getLocalPresence().activities[x].name === Settings.gameName) {
+        if (this.getLocalPresence().activities[x].name === SETTINGS.gameName) {
           this.updateStatus("dnd");
           this.found = true;
         }
@@ -121,8 +121,8 @@ module.exports = class GameZen {
     });
     input.addEventListener("change", () => {
       const newValue = input.value;
-      Settings[key] = newValue;
-      BdApi.saveData(this.meta.name, "settings", Settings);
+      SETTINGS[key] = newValue;
+      BdApi.saveData(this.meta.name, "settings", SETTINGS);
       callback(newValue);
     });
     setting.append(label, input);
@@ -137,7 +137,7 @@ module.exports = class GameZen {
       "Game Name",
       "gameName",
       "text",
-      Settings.gameName,
+      SETTINGS.gameName,
       this.updateButtonText
     );
     SettingsPanel.append(gameName);
