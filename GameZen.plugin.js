@@ -138,23 +138,31 @@ module.exports = class GameZen {
    * Activates Do Not Disturb mode when a game is launched.
    */
   start() {
-    Object.assign(SETTINGS, BdApi.loadData(this.meta.name, "settings"));
-    this.currentUserStatus = this.currentStatus();
-    this.getLocalPresence =
-      BdApi.findModuleByProps("getLocalPresence").getLocalPresence;
+    try {
+      Object.assign(SETTINGS, BdApi.loadData(this.meta.name, "settings"));
+      this.currentUserStatus = this.currentStatus();
+      this.getLocalPresence =
+        BdApi.findModuleByProps("getLocalPresence").getLocalPresence;
 
-    this.intervalId = setInterval(() => {
-      for (const x in this.getLocalPresence().activities) {
-        if (this.getLocalPresence().activities[x].name === SETTINGS.gameName) {
-          this.updateStatus("dnd");
-          this.found = true;
+      this.intervalId = setInterval(() => {
+        if (this.isGameActivity(this.getLocalPresence().activities)) {
+          if (this.currentStatus() !== "dnd") {
+            this.currentUserStatus = this.currentStatus();
+            this.updateToDnd();
+          }
+        } else if (this.currentStatus() === "dnd") {
+          this.updateToCurrentStatus();
         }
-      }
-      if (!this.found) {
-        this.updateStatus(this.currentUserStatus);
-      }
-      this.found = false;
-    }, 10000);
+        if (
+          this.currentStatus() !== this.currentUserStatus &&
+          !this.isGameActivity(this.getLocalPresence().activities)
+        ) {
+          this.currentUserStatus = this.currentStatus();
+        }
+      }, 10000);
+    } catch (error) {
+      console.error(ERRORS.ERROR_STARTING_GAMEZEN, error);
+    }
   }
 
   /**
