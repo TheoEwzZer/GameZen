@@ -116,7 +116,6 @@ module.exports = class GameZen {
     try {
       if (this.currentStatus() !== "dnd") {
         this.currentUserStatus = this.currentStatus();
-        console.log("GameZen: 3", this.currentUserStatus);
         this.updateStatus("dnd");
       }
     } catch (error) {
