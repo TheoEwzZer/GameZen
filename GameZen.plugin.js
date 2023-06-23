@@ -102,11 +102,23 @@ module.exports = class GameZen {
     }, 10000);
   }
 
+  /**
+   * Stops the GameZen plugin by clearing the interval and updating the user status to the current status.
+   */
   stop() {
     clearInterval(this.intervalId);
     this.updateStatus(this.currentStatus());
   }
 
+  /**
+   * Builds a setting element.
+   * @param {string} text
+   * @param {string} key
+   * @param {string} type
+   * @param {string} value
+   * @param {Function} callback
+   * @returns {HTMLElement} the setting element
+   */
   buildSetting(text, key, type, value, callback = () => {}) {
     const setting = Object.assign(document.createElement("div"), {
       className: "setting",
@@ -129,6 +141,10 @@ module.exports = class GameZen {
     return setting;
   }
 
+  /**
+   * Builds the settings panel.
+   * @returns {HTMLElement} the settings panel
+   */
   getSettingsPanel() {
     const SettingsPanel = document.createElement("div");
     SettingsPanel.id = "settings";
