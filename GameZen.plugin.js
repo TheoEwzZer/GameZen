@@ -55,7 +55,6 @@ module.exports = class GameZen {
    */
   constructor(meta) {
     this.meta = meta;
-    this.found = false;
   }
 
   /**
