@@ -89,6 +89,27 @@ module.exports = class GameZen {
   }
 
   /**
+   * Checks if the user is currently playing the game specified in the `SETTINGS.gameName` property.
+   * @param {Array} activities - An array of user activities.
+   * @returns {boolean} - Returns `true` if the user is playing the game specified in `SETTINGS.gameName`, otherwise returns `false`.
+   */
+  isGameActivity(activities) {
+    if (
+      typeof SETTINGS.gameName !== "string" ||
+      SETTINGS.gameName.trim() === ""
+    ) {
+      console.error(ERRORS.INVALID_GAME_NAME, SETTINGS.gameName);
+      return false;
+    }
+    for (const activity in activities) {
+      if (activities[activity].name === SETTINGS.gameName) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
    * Activates Do Not Disturb mode when a game is launched.
    */
   start() {
