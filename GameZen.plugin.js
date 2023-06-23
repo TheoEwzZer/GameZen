@@ -63,20 +63,29 @@ module.exports = class GameZen {
    * @param {('online'|'idle'|'invisible'|'dnd')} toStatus
    */
   updateStatus(toStatus) {
-    UserSettingsProtoUtils.updateAsync(
-      "status",
-      (statusSetting) => {
-        statusSetting.status.value = toStatus;
-      },
-      0
-    );
+    try {
+      UserSettingsProtoUtils.updateAsync(
+        "status",
+        (statusSetting) => {
+          statusSetting.status.value = toStatus;
+        },
+        0
+      );
+    } catch (error) {
+      console.error(ERRORS.ERROR_UPDATING_USER_STATUS, error);
+    }
   }
 
   /**
    * @returns {string} the current user status
    */
   currentStatus() {
-    return UserSettingsProtoStore.settings.status.status.value;
+    try {
+      return UserSettingsProtoStore.settings.status.status.value;
+    } catch (error) {
+      console.error(ERRORS.ERROR_GETTING_CURRENT_USER_STATUS, error);
+      return "";
+    }
   }
 
   /**
