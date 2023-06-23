@@ -110,6 +110,21 @@ module.exports = class GameZen {
   }
 
   /**
+   * Updates the user status to "dnd".
+   */
+  updateToDnd() {
+    try {
+      if (this.currentStatus() !== "dnd") {
+        this.currentUserStatus = this.currentStatus();
+        console.log("GameZen: 3", this.currentUserStatus);
+        this.updateStatus("dnd");
+      }
+    } catch (error) {
+      console.error(ERRORS.ERROR_UPDATING_USER_STATUS_TO_DND, error);
+    }
+  }
+
+  /**
    * Activates Do Not Disturb mode when a game is launched.
    */
   start() {
