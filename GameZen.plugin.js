@@ -35,6 +35,18 @@ const UserSettingsProtoUtils = BdApi.Webpack.getModule(
   { first: true, searchExports: true }
 );
 
+const ERRORS = {
+  INVALID_GAME_NAME: "Invalid game name:",
+  ERROR_UPDATING_USER_STATUS: "Error updating user status:",
+  ERROR_STARTING_GAMEZEN: "Error starting GameZen:",
+  ERROR_STOPPING_GAMEZEN: "Error stopping GameZen:",
+  ERROR_SAVING_SETTINGS: "Error saving settings:",
+  ERROR_GETTING_CURRENT_USER_STATUS: "Error getting current user status:",
+  ERROR_UPDATING_USER_STATUS_TO_CURRENT_STATUS:
+    "Error updating user status to current status:",
+  ERROR_UPDATING_USER_STATUS_TO_DND: "Error updating user status to DND:",
+};
+
 const Settings = { gameName: "Game Name" };
 
 module.exports = class GameZen {
