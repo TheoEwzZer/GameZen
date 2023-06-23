@@ -125,6 +125,17 @@ module.exports = class GameZen {
   }
 
   /**
+   * Updates the user status to the current status.
+   */
+  updateToCurrentStatus() {
+    try {
+      this.updateStatus(this.currentUserStatus);
+    } catch (error) {
+      console.error(ERRORS.ERROR_UPDATING_USER_STATUS_TO_CURRENT_STATUS, error);
+    }
+  }
+
+  /**
    * Activates Do Not Disturb mode when a game is launched.
    */
   start() {
