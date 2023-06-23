@@ -161,8 +161,12 @@ module.exports = class GameZen {
    * Stops the GameZen plugin by clearing the interval and updating the user status to the current status.
    */
   stop() {
-    clearInterval(this.intervalId);
-    this.updateStatus(this.currentStatus());
+    try {
+      clearInterval(this.intervalId);
+      this.updateToCurrentStatus();
+    } catch (error) {
+      console.error(ERRORS.ERROR_STOPPING_GAMEZEN, error);
+    }
   }
 
   /**
