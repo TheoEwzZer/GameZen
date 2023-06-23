@@ -187,13 +187,21 @@ module.exports = class GameZen {
       name: key,
       value: value,
     });
-    input.addEventListener("change", () => {
+    const changeListener = () => {
       const newValue = input.value;
       SETTINGS[key] = newValue;
-      BdApi.saveData(this.meta.name, "settings", SETTINGS);
+      try {
+        BdApi.saveData(this.meta.name, "settings", SETTINGS);
+      } catch (error) {
+        console.error(ERRORS.ERROR_SAVING_SETTINGS, error);
+      }
       callback(newValue);
-    });
+    };
+    input.addEventListener("change", changeListener);
     setting.append(label, input);
+    setting.destroy = () => {
+      input.removeEventListener("change", changeListener);
+    };
     return setting;
   }
 
