@@ -47,7 +47,10 @@ const ERRORS = {
   ERROR_UPDATING_USER_STATUS_TO_DND: "Error updating user status to DND:",
 };
 
-const SETTINGS = { gameName: "Game Name" };
+const SETTINGS = {
+  gameName: "Game Name",
+  checkIntervalInSeconds: 10,
+};
 
 module.exports = class GameZen {
   /**
@@ -158,7 +161,7 @@ module.exports = class GameZen {
         ) {
           this.currentUserStatus = this.currentStatus();
         }
-      }, 10000);
+      }, SETTINGS.checkIntervalInSeconds * 1000);
     } catch (error) {
       console.error(ERRORS.ERROR_STARTING_GAMEZEN, error);
     }
@@ -230,7 +233,17 @@ module.exports = class GameZen {
       SETTINGS.gameName,
       this.updateButtonText
     );
+
+    const checkIntervalInSeconds = this.buildSetting(
+      "Check Interval (in seconds)",
+      "checkIntervalInSeconds",
+      "number",
+      SETTINGS.checkIntervalInSeconds,
+      this.updateButtonText
+    );
+
     SettingsPanel.append(gameName);
+    SettingsPanel.append(checkIntervalInSeconds);
     return SettingsPanel;
   }
 };
