@@ -7,7 +7,7 @@
  * @donate https://www.paypal.me/TheoEwzZer
  * @source https://github.com/TheoEwzZer/GameZen
  * @updateUrl https://raw.githubusercontent.com/TheoEwzZer/GameZen/main/GameZen.plugin.js
- * @version 0.0.3
+ * @version 0.1.0
  */
 
 /**
