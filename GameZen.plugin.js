@@ -185,10 +185,9 @@ module.exports = class GameZen {
    * @param {string} key
    * @param {string} type
    * @param {string} value
-   * @param {Function} callback
    * @returns {HTMLElement} the setting element
    */
-  buildSetting(text, key, type, value, callback = () => {}) {
+  buildSetting(text, key, type, value = () => {}) {
     const setting = Object.assign(document.createElement("div"), {
       className: "setting",
     });
@@ -208,7 +207,6 @@ module.exports = class GameZen {
       } catch (error) {
         console.error(ERRORS.ERROR_SAVING_SETTINGS, error);
       }
-      callback(newValue);
     };
     input.addEventListener("change", changeListener);
     setting.append(label, input);
@@ -230,16 +228,14 @@ module.exports = class GameZen {
       "Game Name",
       "gameName",
       "text",
-      SETTINGS.gameName,
-      this.updateButtonText
+      SETTINGS.gameName
     );
 
     const checkIntervalInSeconds = this.buildSetting(
       "Check Interval (in seconds)",
       "checkIntervalInSeconds",
       "number",
-      SETTINGS.checkIntervalInSeconds,
-      this.updateButtonText
+      SETTINGS.checkIntervalInSeconds
     );
 
     SettingsPanel.append(gameName);
