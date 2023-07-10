@@ -143,8 +143,9 @@ module.exports = class GameZen {
     try {
       Object.assign(SETTINGS, BdApi.loadData(this.meta.name, "settings"));
       this.currentUserStatus = this.currentStatus();
-      this.getLocalPresence =
-        BdApi.findModuleByProps("getLocalPresence").getLocalPresence;
+      this.getLocalPresence = BdApi.Webpack.getModule(
+        BdApi.Webpack.Filters.byProps("getLocalPresence")
+      ).getLocalPresence;
 
       this.intervalId = setInterval(() => {
         if (this.isGameActivity(this.getLocalPresence().activities)) {
