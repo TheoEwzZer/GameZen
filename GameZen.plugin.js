@@ -126,8 +126,8 @@ module.exports = class GameZen {
       ).getLocalPresence;
 
       this.intervalId = setInterval(() => {
-        const runningGames = BdApi.Webpack.getStore("RunningGameStore").getRunningGames();
-        if (runningGames.length > 0) {
+        const primaryActivity = BdApi.Webpack.getStore("LocalActivityStore").getPrimaryActivity();
+        if (primaryActivity) {
           if (this.currentStatus() !== "dnd") {
             this.currentUserStatus = this.currentStatus();
             this.updateToDnd();
@@ -137,7 +137,7 @@ module.exports = class GameZen {
         }
         if (
           this.currentStatus() !== this.currentUserStatus &&
-          runningGames.length == 0
+          !primaryActivity
         ) {
           this.currentUserStatus = this.currentStatus();
         }
