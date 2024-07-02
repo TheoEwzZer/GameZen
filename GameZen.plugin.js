@@ -7,7 +7,7 @@
  * @donate https://www.paypal.me/TheoEwzZer
  * @source https://github.com/TheoEwzZer/GameZen
  * @updateUrl https://raw.githubusercontent.com/TheoEwzZer/GameZen/main/GameZen.plugin.js
- * @version 0.2.0
+ * @version 0.2.1
  */
 
 /**
@@ -47,6 +47,8 @@ module.exports = class GameZen {
    */
   constructor(meta) {
     this.meta = meta;
+    this.unsubscribe = null;
+    this.currentUserStatus = null;
   }
 
   /**
@@ -116,18 +118,24 @@ module.exports = class GameZen {
     }
 
     const checkActivity = () => {
-      const primaryActivity = LocalActivityStore.getPrimaryActivity();
+      try {
+        const primaryActivity = LocalActivityStore.getPrimaryActivity();
 
-      if (primaryActivity) {
-        this.updateToDnd();
-      } else if (this.currentStatus() === "dnd") {
-        this.updateToCurrentStatus();
+        if (primaryActivity && primaryActivity.type === 0) {
+          this.updateToDnd();
+        } else if (this.currentStatus() === "dnd") {
+          this.updateToCurrentStatus();
+        }
+      } catch (error) {
+        console.error("Error checking activity:", error);
       }
     };
 
     checkActivity();
 
-    this.unsubscribe = LocalActivityStore.addChangeListener(checkActivity);
+    this.unsubscribe = LocalActivityStore.addChangeListener(() => {
+      setTimeout(checkActivity, 1000); // Add a delay to reduce frequency
+    });
   }
 
   /**
