@@ -48,7 +48,6 @@ const ERRORS = {
 };
 
 const SETTINGS = {
-  gameName: "Game Name",
   checkIntervalInSeconds: 10,
 };
 
@@ -91,27 +90,6 @@ module.exports = class GameZen {
   }
 
   /**
-   * Checks if the user is currently playing the game specified in the `SETTINGS.gameName` property.
-   * @param {Array} activities - An array of user activities.
-   * @returns {boolean} - Returns `true` if the user is playing the game specified in `SETTINGS.gameName`, otherwise returns `false`.
-   */
-  isGameActivity(activities) {
-    if (
-      typeof SETTINGS.gameName !== "string" ||
-      SETTINGS.gameName.trim() === ""
-    ) {
-      console.error(ERRORS.INVALID_GAME_NAME, SETTINGS.gameName);
-      return false;
-    }
-    for (const activity in activities) {
-      if (activities[activity].name === SETTINGS.gameName) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  /**
    * Updates the user status to "dnd".
    */
   updateToDnd() {
@@ -148,7 +126,8 @@ module.exports = class GameZen {
       ).getLocalPresence;
 
       this.intervalId = setInterval(() => {
-        if (this.isGameActivity(this.getLocalPresence().activities)) {
+        const primaryActivity = BdApi.Webpack.getStore("LocalActivityStore").getPrimaryActivity();
+        if (primaryActivity) {
           if (this.currentStatus() !== "dnd") {
             this.currentUserStatus = this.currentStatus();
             this.updateToDnd();
@@ -158,7 +137,7 @@ module.exports = class GameZen {
         }
         if (
           this.currentStatus() !== this.currentUserStatus &&
-          !this.isGameActivity(this.getLocalPresence().activities)
+          !primaryActivity
         ) {
           this.currentUserStatus = this.currentStatus();
         }
@@ -225,21 +204,13 @@ module.exports = class GameZen {
     const SettingsPanel = document.createElement("div");
     SettingsPanel.id = "settings";
 
-    const gameName = this.buildSetting(
-      "Game Name",
-      "gameName",
-      "text",
-      SETTINGS.gameName
-    );
-
     const checkIntervalInSeconds = this.buildSetting(
       "Check Interval (in seconds)",
       "checkIntervalInSeconds",
       "number",
       SETTINGS.checkIntervalInSeconds
     );
-
-    SettingsPanel.append(gameName);
+    
     SettingsPanel.append(checkIntervalInSeconds);
     return SettingsPanel;
   }
