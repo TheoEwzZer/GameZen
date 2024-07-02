@@ -43,7 +43,7 @@ const ERRORS = {
 };
 
 const SETTINGS = {
-  checkIntervalInSeconds: 10,
+  checkIntervalInSeconds: 60,
 };
 
 module.exports = class GameZen {
