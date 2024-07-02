@@ -32,7 +32,6 @@ const UserSettingsProtoUtils = BdApi.Webpack.getModule(
 );
 
 const ERRORS = {
-  INVALID_GAME_NAME: "Invalid game name:",
   ERROR_UPDATING_USER_STATUS: "Error updating user status:",
   ERROR_STARTING_GAMEZEN: "Error starting GameZen:",
   ERROR_STOPPING_GAMEZEN: "Error stopping GameZen:",
