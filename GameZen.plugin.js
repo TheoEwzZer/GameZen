@@ -17,10 +17,7 @@
  */
 const UserSettingsProtoStore = BdApi.Webpack.getModule(
   (m) =>
-    m &&
-    typeof m.getName == "function" &&
-    m.getName() == "UserSettingsProtoStore" &&
-    m,
+    m && typeof m.getName == "function" && m.getName() == "UserSettingsProtoStore" && m,
   { first: true, searchExports: true }
 );
 
@@ -30,8 +27,7 @@ const UserSettingsProtoStore = BdApi.Webpack.getModule(
  * @property {Function} updateAsync - Asynchronously updates a user setting.
  */
 const UserSettingsProtoUtils = BdApi.Webpack.getModule(
-  (m) =>
-    m.ProtoClass && m.ProtoClass.typeName.endsWith(".PreloadedUserSettings"),
+  (m) => m?.ProtoClass?.typeName?.endsWith(".PreloadedUserSettings"),
   { first: true, searchExports: true }
 );
 
@@ -126,7 +122,8 @@ module.exports = class GameZen {
       ).getLocalPresence;
 
       this.intervalId = setInterval(() => {
-        const primaryActivity = BdApi.Webpack.getStore("LocalActivityStore").getPrimaryActivity();
+        const primaryActivity =
+          BdApi.Webpack.getStore("LocalActivityStore").getPrimaryActivity();
         if (primaryActivity) {
           if (this.currentStatus() !== "dnd") {
             this.currentUserStatus = this.currentStatus();
@@ -135,10 +132,7 @@ module.exports = class GameZen {
         } else if (this.currentStatus() === "dnd") {
           this.updateToCurrentStatus();
         }
-        if (
-          this.currentStatus() !== this.currentUserStatus &&
-          !primaryActivity
-        ) {
+        if (this.currentStatus() !== this.currentUserStatus && !primaryActivity) {
           this.currentUserStatus = this.currentStatus();
         }
       }, SETTINGS.checkIntervalInSeconds * 1000);
@@ -210,7 +204,7 @@ module.exports = class GameZen {
       "number",
       SETTINGS.checkIntervalInSeconds
     );
-    
+
     SettingsPanel.append(checkIntervalInSeconds);
     return SettingsPanel;
   }
