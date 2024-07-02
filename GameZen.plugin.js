@@ -7,7 +7,7 @@
  * @donate https://www.paypal.me/TheoEwzZer
  * @source https://github.com/TheoEwzZer/GameZen
  * @updateUrl https://raw.githubusercontent.com/TheoEwzZer/GameZen/main/GameZen.plugin.js
- * @version 0.1.0
+ * @version 0.2.0
  */
 
 /**
@@ -35,15 +35,10 @@ const ERRORS = {
   ERROR_UPDATING_USER_STATUS: "Error updating user status:",
   ERROR_STARTING_GAMEZEN: "Error starting GameZen:",
   ERROR_STOPPING_GAMEZEN: "Error stopping GameZen:",
-  ERROR_SAVING_SETTINGS: "Error saving settings:",
   ERROR_GETTING_CURRENT_USER_STATUS: "Error getting current user status:",
   ERROR_UPDATING_USER_STATUS_TO_CURRENT_STATUS:
     "Error updating user status to current status:",
   ERROR_UPDATING_USER_STATUS_TO_DND: "Error updating user status to DND:",
-};
-
-const SETTINGS = {
-  checkIntervalInSeconds: 60,
 };
 
 module.exports = class GameZen {
@@ -110,101 +105,54 @@ module.exports = class GameZen {
   }
 
   /**
+   * Observes changes in activity and updates the status accordingly.
+   */
+  observePresenceChanges() {
+    const LocalActivityStore = BdApi.Webpack.getStore("LocalActivityStore");
+
+    if (!LocalActivityStore) {
+      console.error("LocalActivityStore not found.");
+      return;
+    }
+
+    const checkActivity = () => {
+      const primaryActivity = LocalActivityStore.getPrimaryActivity();
+
+      if (primaryActivity) {
+        this.updateToDnd();
+      } else if (this.currentStatus() === "dnd") {
+        this.updateToCurrentStatus();
+      }
+    };
+
+    checkActivity();
+
+    this.unsubscribe = LocalActivityStore.addChangeListener(checkActivity);
+  }
+
+  /**
    * Activates Do Not Disturb mode when a game is launched.
    */
   start() {
     try {
-      Object.assign(SETTINGS, BdApi.loadData(this.meta.name, "settings"));
       this.currentUserStatus = this.currentStatus();
-      this.getLocalPresence = BdApi.Webpack.getModule(
-        BdApi.Webpack.Filters.byProps("getLocalPresence")
-      ).getLocalPresence;
-
-      this.intervalId = setInterval(() => {
-        const primaryActivity =
-          BdApi.Webpack.getStore("LocalActivityStore").getPrimaryActivity();
-        if (primaryActivity) {
-          if (this.currentStatus() !== "dnd") {
-            this.currentUserStatus = this.currentStatus();
-            this.updateToDnd();
-          }
-        } else if (this.currentStatus() === "dnd") {
-          this.updateToCurrentStatus();
-        }
-        if (this.currentStatus() !== this.currentUserStatus && !primaryActivity) {
-          this.currentUserStatus = this.currentStatus();
-        }
-      }, SETTINGS.checkIntervalInSeconds * 1000);
+      this.observePresenceChanges();
     } catch (error) {
       console.error(ERRORS.ERROR_STARTING_GAMEZEN, error);
     }
   }
 
   /**
-   * Stops the GameZen plugin by clearing the interval and updating the user status to the current status.
+   * Stops the GameZen plugin by removing the activity change listener and updating the user status to the current status.
    */
   stop() {
     try {
-      clearInterval(this.intervalId);
+      if (this.unsubscribe) {
+        this.unsubscribe();
+      }
       this.updateToCurrentStatus();
     } catch (error) {
       console.error(ERRORS.ERROR_STOPPING_GAMEZEN, error);
     }
-  }
-
-  /**
-   * Builds a setting element.
-   * @param {string} text
-   * @param {string} key
-   * @param {string} type
-   * @param {string} value
-   * @returns {HTMLElement} the setting element
-   */
-  buildSetting(text, key, type, value = () => {}) {
-    const setting = Object.assign(document.createElement("div"), {
-      className: "setting",
-    });
-    const label = Object.assign(document.createElement("span"), {
-      textContent: text,
-    });
-    const input = Object.assign(document.createElement("input"), {
-      type: type,
-      name: key,
-      value: value,
-    });
-    const changeListener = () => {
-      const newValue = input.value;
-      SETTINGS[key] = newValue;
-      try {
-        BdApi.saveData(this.meta.name, "settings", SETTINGS);
-      } catch (error) {
-        console.error(ERRORS.ERROR_SAVING_SETTINGS, error);
-      }
-    };
-    input.addEventListener("change", changeListener);
-    setting.append(label, input);
-    setting.destroy = () => {
-      input.removeEventListener("change", changeListener);
-    };
-    return setting;
-  }
-
-  /**
-   * Builds the settings panel.
-   * @returns {HTMLElement} the settings panel
-   */
-  getSettingsPanel() {
-    const SettingsPanel = document.createElement("div");
-    SettingsPanel.id = "settings";
-
-    const checkIntervalInSeconds = this.buildSetting(
-      "Check Interval (in seconds)",
-      "checkIntervalInSeconds",
-      "number",
-      SETTINGS.checkIntervalInSeconds
-    );
-
-    SettingsPanel.append(checkIntervalInSeconds);
-    return SettingsPanel;
   }
 };
