@@ -32,7 +32,7 @@
 
 ## 📍 Overview
 
-The GameZen plugin is a BetterDiscord plugin that aims to enhance the user experience by automatically activating Do Not Disturb mode and updating the user status when any game is launched. By providing a settings panel, users are able to customize the check interval, making it a flexible and personalized solution for gamers on Discord. Its core value proposition lies in its ability to enhance productivity and immersion during gaming sessions by managing notifications effectively.
+The GameZen plugin is a BetterDiscord plugin that aims to enhance the user experience by automatically activating Do Not Disturb mode and updating the user status when any game is launched. Its core value proposition lies in its ability to enhance productivity and immersion during gaming sessions by managing notifications effectively.
 
 ---
 
@@ -54,9 +54,9 @@ The GameZen plugin is a BetterDiscord plugin that aims to enhance the user exper
 
 <details closed><summary>Root</summary>
 
-| File                                                                                   | Summary                                                                                                                                                                                                                                                               |
-| -------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [GameZen.plugin.js](https://github.com/TheoEwzZer/GameZen/blob/main/GameZen.plugin.js) | The code is for a BetterDiscord plugin called GameZen. It automatically activates Do Not Disturb mode when a game is launched, and updates the user status accordingly. It also provides a settings panel for customizing the check interval. |
+| File                                                                                   | Summary                                                                                                                                                                 |
+| -------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [GameZen.plugin.js](https://github.com/TheoEwzZer/GameZen/blob/main/GameZen.plugin.js) | The code is for a BetterDiscord plugin called GameZen. It automatically activates Do Not Disturb mode when a game is launched, and updates the user status accordingly. |
 
 </details>
 
