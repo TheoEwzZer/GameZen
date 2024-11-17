@@ -7,7 +7,7 @@
  * @donate https://www.paypal.me/TheoEwzZer
  * @source https://github.com/TheoEwzZer/GameZen
  * @updateUrl https://raw.githubusercontent.com/TheoEwzZer/GameZen/main/GameZen.plugin.js
- * @version 0.2.1
+ * @version 1.0.0
  */
 
 /**
@@ -49,6 +49,107 @@ module.exports = class GameZen {
     this.meta = meta;
     this.unsubscribe = null;
     this.currentUserStatus = null;
+    this.defaultSettings = {
+      ignoredGames: [],
+    };
+    this.settings = BdApi.loadData(this.meta.name, "settings") || this.defaultSettings;
+  }
+
+  saveSettings() {
+    BdApi.saveData(this.meta.name, "settings", this.settings);
+  }
+
+  loadSettings() {
+    this.settings = BdApi.loadData(this.meta.name, "settings") || this.defaultSettings;
+  }
+
+  getSettingsPanel() {
+    const { React } = BdApi;
+    const { useState } = React;
+
+    const SettingsPanel = ({ settings, saveSettings }) => {
+      const [ignoredGames, setIgnoredGames] = useState(settings.ignoredGames || []);
+      const [newGame, setNewGame] = useState("");
+
+      const addGame = () => {
+        if (newGame.trim().length > 0 && !ignoredGames.includes(newGame.trim())) {
+          const updatedGames = [...ignoredGames, newGame.trim()];
+          setIgnoredGames(updatedGames);
+          settings.ignoredGames = updatedGames;
+          saveSettings();
+          setNewGame("");
+        }
+      };
+
+      const removeGame = (gameToRemove) => {
+        const updatedGames = ignoredGames.filter((game) => game !== gameToRemove);
+        setIgnoredGames(updatedGames);
+        settings.ignoredGames = updatedGames;
+        saveSettings();
+      };
+
+      return React.createElement(
+        "div",
+        { style: { padding: "10px" } },
+        React.createElement("h2", null, "GameZen Settings"),
+        React.createElement(
+          "div",
+          null,
+          React.createElement("h3", null, "Ignored Games:"),
+          React.createElement(
+            "ul",
+            null,
+            ignoredGames.map((game, index) =>
+              React.createElement(
+                "li",
+                { key: index, style: { marginBottom: "5px" } },
+                game,
+                React.createElement(
+                  "button",
+                  {
+                    onClick: () => removeGame(game),
+                    style: {
+                      marginLeft: "10px",
+                      padding: "2px 5px",
+                      cursor: "pointer",
+                    },
+                  },
+                  "Remove"
+                )
+              )
+            )
+          ),
+          React.createElement(
+            "div",
+            { style: { marginTop: "10px" } },
+            React.createElement("input", {
+              type: "text",
+              value: newGame,
+              onChange: (e) => setNewGame(e.target.value),
+              placeholder: "Add a game",
+              style: { padding: "5px", width: "200px" },
+            }),
+            React.createElement(
+              "button",
+              {
+                onClick: addGame,
+                style: {
+                  marginLeft: "10px",
+                  padding: "5px 10px",
+                  cursor: "pointer",
+                },
+              },
+              "Add"
+            )
+          )
+        )
+      );
+    };
+
+    return React.createElement(SettingsPanel, {
+      settings: this.settings,
+      saveSettings: this.saveSettings.bind(this),
+    });
   }
 
   /**
@@ -122,6 +223,9 @@ module.exports = class GameZen {
         const primaryActivity = LocalActivityStore.getPrimaryActivity();
 
         if (primaryActivity && primaryActivity.type === 0) {
+          if (this.settings.ignoredGames.includes(primaryActivity.name)) {
+            return;
+          }
           this.updateToDnd();
         } else if (this.currentStatus() === "dnd") {
           this.updateToCurrentStatus();
@@ -143,6 +247,7 @@ module.exports = class GameZen {
    */
   start() {
     try {
+      this.loadSettings();
       this.currentUserStatus = this.currentStatus();
       this.observePresenceChanges();
     } catch (error) {
@@ -159,6 +264,7 @@ module.exports = class GameZen {
         this.unsubscribe();
       }
       this.updateToCurrentStatus();
+      this.saveSettings();
     } catch (error) {
       console.error(ERRORS.ERROR_STOPPING_GAMEZEN, error);
     }

@@ -6,14 +6,6 @@
 <h3>◦ Play uninterrupted with GameZen!</h3>
 <h3>◦ A BetterDiscord plugin</h3>
 <h3>◦ Developed with the language listed below.</h3>
-
-<p align="center">
-<img src="https://img.shields.io/badge/JavaScript-F7DF1E.svg?style&logo=JavaScript&logoColor=black" alt="JavaScript" />
-</p>
-<img src="https://img.shields.io/github/languages/top/TheoEwzZer/GameZen?style&color=5D6D7E" alt="GitHub top language" />
-<img src="https://img.shields.io/github/languages/code-size/TheoEwzZer/GameZen?style&color=5D6D7E" alt="GitHub code size in bytes" />
-<img src="https://img.shields.io/github/commit-activity/m/TheoEwzZer/GameZen?style&color=5D6D7E" alt="GitHub commit activity" />
-<img src="https://img.shields.io/github/license/TheoEwzZer/GameZen?style&color=5D6D7E" alt="GitHub license" />
 </div>
 
 ---
@@ -22,8 +14,6 @@
 
 - [📒 Table of Contents](#-table-of-contents)
 - [📍 Overview](#-overview)
-- [⚙️ Features](#️-features)
-- [🧩 Modules](#-modules)
 - [🚀 Getting Started](#-getting-started)
 - [🤝 Contributing](#-contributing)
 - [📄 License](#-license)
@@ -32,33 +22,7 @@
 
 ## 📍 Overview
 
-The GameZen plugin is a BetterDiscord plugin that aims to enhance the user experience by automatically activating Do Not Disturb mode and updating the user status when any game is launched. Its core value proposition lies in its ability to enhance productivity and immersion during gaming sessions by managing notifications effectively.
-
----
-
-## ⚙️ Features
-
-| Feature                | Description                                                                                                                                                                                                                                                                                 |
-| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **⚙️ Architecture**    | The system follows a plugin design pattern, where the GameZen plugin integrates with Discord. It uses event-driven programming to detect game launches and update the user status. The settings panel provides customization options. The codebase is organized into functions and classes. |
-| **🔗 Dependencies**    | The codebase heavily relies on the Discord.js library for interacting with the Discord API. There don't seem to be any other external dependencies.                                                                                                                                         |
-| **🧩 Modularity**      | The codebase is modular, with the functionality divided into separate files. The main functionality is contained within the GameZen.plugin.js file, and the settings panel implementation is in progress.                                                                                   |
-| **⚡️ Performance**    | Performance assessment cannot be made from the codebase alone. It depends on how well the Discord.js library handles interactions with the Discord API.                                                                                                                                     |
-| **🔀 Version Control** | The codebase utilizes Git for version control. The commit history suggests collaborative development and branches for feature implementation.                                                                                                                                               |
-| **🔌 Integrations**    | The system integrates with BetterDiscord, utilizing the Discord.js library to interact with the Discord API and modify user status based on launched games.                                                                                                                                 |
-| **📶 Scalability**     | Scalability considerations cannot be determined from the codebase. Dependencies on external systems may affect scalability aspects. However, as a plugin, it should integrate well with the existing Discord infrastructure and scale accordingly.                                          |
-
----
-
-## 🧩 Modules
-
-<details closed><summary>Root</summary>
-
-| File                                                                                   | Summary                                                                                                                                                                 |
-| -------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [GameZen.plugin.js](https://github.com/TheoEwzZer/GameZen/blob/main/GameZen.plugin.js) | The code is for a BetterDiscord plugin called GameZen. It automatically activates Do Not Disturb mode when a game is launched, and updates the user status accordingly. |
-
-</details>
+The GameZen plugin is a BetterDiscord plugin that aims to enhance the user experience by automatically activating Do Not Disturb mode and updating the user status when any game is launched. Its core value proposition lies in its ability to enhance productivity and immersion during gaming sessions by managing notifications effectively. You can also configure a list of games to ignore, ensuring that certain games do not trigger the Do Not Disturb mode.
 
 ---
 
@@ -79,6 +43,10 @@ Make sure you have **BetterDiscord** installed. If not, you can download it from
 ### 🎮 Using GameZen
 
 Once the plugin is installed and Discord is running, GameZen will automatically activate `Do Not Disturb` mode when a game is launched. When you close the game, it will restore your previous status.
+
+### 📝 Ignore List
+
+You can configure a list of games to ignore, ensuring that certain games do not trigger the Do Not Disturb mode. This can be done through the settings panel of the plugin.
 
 ---
 
