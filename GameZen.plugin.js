@@ -48,7 +48,8 @@ module.exports = class GameZen {
   constructor(meta) {
     this.meta = meta;
     this.unsubscribe = null;
-    this.currentUserStatus = null;
+    this.lastKnownRealStatus = null;
+    this.fakeStatusActivated = false;
     this.defaultSettings = {
       ignoredGames: [],
     };
@@ -156,12 +157,26 @@ module.exports = class GameZen {
    * Updates the remote status to the param `toStatus`
    * @param {('online'|'idle'|'invisible'|'dnd')} toStatus
    */
-  updateStatus(toStatus) {
+  updateRemoteStatus(toStatus) {
+    if (this.getCurrentRemoteStatus() === toStatus) {
+      return;
+    }
+
     try {
       UserSettingsProtoUtils.updateAsync(
         "status",
         (statusSetting) => {
-          statusSetting.status.value = toStatus;
+          // not sure why this is sometimes undefined
+          if (!statusSetting) {
+            // ignore errors out of here
+            return;
+          }
+
+          try {
+            statusSetting.status.value = toStatus;
+          } catch (error) {
+            statusSetting.value = toStatus;
+          }
         },
         0
       );
@@ -173,7 +188,7 @@ module.exports = class GameZen {
   /**
    * @returns {string} the current user status
    */
-  currentStatus() {
+  getCurrentRemoteStatus() {
     try {
       return UserSettingsProtoStore.settings.status.status.value;
     } catch (error) {
@@ -185,12 +200,14 @@ module.exports = class GameZen {
   /**
    * Updates the user status to "dnd".
    */
-  updateToDnd() {
+  activateFakeStatus() {
+    if (this.fakeStatusActivated) return;
+
     try {
-      if (this.currentStatus() !== "dnd") {
-        this.currentUserStatus = this.currentStatus();
-        this.updateStatus("dnd");
-      }
+      this.lastKnownRealStatus = this.getCurrentRemoteStatus();
+      this.updateRemoteStatus("dnd");
+
+      this.fakeStatusActivated = true;
     } catch (error) {
       console.error(ERRORS.ERROR_UPDATING_USER_STATUS_TO_DND, error);
     }
@@ -199,9 +216,14 @@ module.exports = class GameZen {
   /**
    * Updates the user status to the current status.
    */
-  updateToCurrentStatus() {
+  deactivateFakeStatus() {
+    if (this.fakeStatusActivated === false) return;
+
     try {
-      this.updateStatus(this.currentUserStatus);
+      this.updateRemoteStatus(this.lastKnownRealStatus);
+
+      this.lastKnownRealStatus = null;
+      this.fakeStatusActivated = false;
     } catch (error) {
       console.error(ERRORS.ERROR_UPDATING_USER_STATUS_TO_CURRENT_STATUS, error);
     }
@@ -218,27 +240,38 @@ module.exports = class GameZen {
       return;
     }
 
+    let currentScheduledRecheck = null;
+
     const checkActivity = () => {
       try {
         const primaryActivity = LocalActivityStore.getPrimaryActivity();
-
-        if (primaryActivity && primaryActivity.type === 0) {
-          if (this.settings.ignoredGames.includes(primaryActivity.name)) {
-            return;
-          }
-          this.updateToDnd();
-        } else if (this.currentStatus() === "dnd") {
-          this.updateToCurrentStatus();
+        if (!primaryActivity || primaryActivity.type !== 0) {
+          return this.deactivateFakeStatus();
         }
+
+        if (this.settings.ignoredGames.includes(primaryActivity.name)) {
+          return this.deactivateFakeStatus();
+        }
+
+        // In Lobby, In Champion Select, In Game
+        if (primaryActivity.name === "League of Legends" && primaryActivity.state !== "In Game") {
+          return this.deactivateFakeStatus();
+        }
+
+        this.activateFakeStatus();
       } catch (error) {
         console.error("Error checking activity:", error);
       }
     };
 
-    checkActivity();
-
     this.unsubscribe = LocalActivityStore.addChangeListener(() => {
-      setTimeout(checkActivity, 1000); // Add a delay to reduce frequency
+      if (currentScheduledRecheck !== null) {
+        clearTimeout(currentScheduledRecheck);
+      }
+      currentScheduledRecheck = setTimeout(() => {
+        currentScheduledRecheck = null;
+        checkActivity();
+      }, 3000); // give time for discord to update and all that
     });
   }
 
@@ -248,7 +281,6 @@ module.exports = class GameZen {
   start() {
     try {
       this.loadSettings();
-      this.currentUserStatus = this.currentStatus();
       this.observePresenceChanges();
     } catch (error) {
       console.error(ERRORS.ERROR_STARTING_GAMEZEN, error);
@@ -263,7 +295,7 @@ module.exports = class GameZen {
       if (this.unsubscribe) {
         this.unsubscribe();
       }
-      this.updateToCurrentStatus();
+      this.deactivateFakeStatus();
       this.saveSettings();
     } catch (error) {
       console.error(ERRORS.ERROR_STOPPING_GAMEZEN, error);
