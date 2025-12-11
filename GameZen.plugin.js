@@ -7,112 +7,323 @@
  * @donate https://www.paypal.me/TheoEwzZer
  * @source https://github.com/TheoEwzZer/GameZen
  * @updateUrl https://raw.githubusercontent.com/TheoEwzZer/GameZen/main/GameZen.plugin.js
- * @version 1.0.0
+ * @version 1.1.1
  */
 
-/**
- * The module for accessing user settings.
- * @typedef {Object} UserSettingsProtoStore
- * @property {Object} settings - The user settings object.
- */
-const UserSettingsProtoStore = BdApi.Webpack.getModule(
-  (m) =>
-    m && typeof m.getName == "function" && m.getName() == "UserSettingsProtoStore" && m,
-  { first: true, searchExports: true }
-);
+module.exports = (meta) => {
+  const { React, Webpack, Data, UI } = BdApi;
+  const { useState, useCallback } = React;
 
-/**
- * Utility functions for updating user settings.
- * @typedef {Object} UserSettingsProtoUtils
- * @property {Function} updateAsync - Asynchronously updates a user setting.
- */
-const UserSettingsProtoUtils = BdApi.Webpack.getModule(
-  (m) => m?.ProtoClass?.typeName?.endsWith(".PreloadedUserSettings"),
-  { first: true, searchExports: true }
-);
+  // Lazy-loaded Webpack modules
+  let UserSettingsProtoStore = null;
+  let UserSettingsProtoUtils = null;
 
-const ERRORS = {
-  ERROR_UPDATING_USER_STATUS: "Error updating user status:",
-  ERROR_STARTING_GAMEZEN: "Error starting GameZen:",
-  ERROR_STOPPING_GAMEZEN: "Error stopping GameZen:",
-  ERROR_GETTING_CURRENT_USER_STATUS: "Error getting current user status:",
-  ERROR_UPDATING_USER_STATUS_TO_CURRENT_STATUS:
-    "Error updating user status to current status:",
-  ERROR_UPDATING_USER_STATUS_TO_DND: "Error updating user status to DND:",
-};
+  // Plugin state
+  let unsubscribe = null;
+  let scheduledRecheck = null;
+  let lastKnownRealStatus = null;
+  let fakeStatusActivated = false;
 
-module.exports = class GameZen {
-  /**
-   * Constructor for the GameZen class.
-   */
-  constructor(meta) {
-    this.meta = meta;
-    this.unsubscribe = null;
-    this.lastKnownRealStatus = null;
-    this.fakeStatusActivated = false;
-    this.defaultSettings = {
-      ignoredGames: [],
+  // Settings
+  const defaultSettings = { ignoredGames: [] };
+  let settings = Object.assign(
+    {},
+    defaultSettings,
+    Data.load(meta.name, "settings")
+  );
+
+  // Styles
+  const styles = {
+    container: {
+      padding: "16px",
+      color: "var(--header-primary)",
+    },
+    title: {
+      fontSize: "16px",
+      fontWeight: "600",
+      marginBottom: "16px",
+      color: "var(--header-primary)",
+    },
+    subtitle: {
+      fontSize: "12px",
+      fontWeight: "600",
+      textTransform: "uppercase",
+      color: "var(--header-secondary)",
+      marginBottom: "8px",
+    },
+    gameList: {
+      listStyle: "none",
+      padding: "0",
+      margin: "0 0 16px 0",
+    },
+    gameItem: {
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-between",
+      padding: "8px 12px",
+      marginBottom: "4px",
+      backgroundColor: "var(--background-secondary)",
+      borderRadius: "4px",
+    },
+    gameName: {
+      color: "var(--text-normal)",
+      fontSize: "14px",
+    },
+    removeButton: {
+      backgroundColor: "var(--button-danger-background)",
+      color: "white",
+      border: "none",
+      borderRadius: "3px",
+      padding: "4px 8px",
+      fontSize: "12px",
+      cursor: "pointer",
+      transition: "background-color 0.2s",
+    },
+    inputContainer: {
+      display: "flex",
+      gap: "8px",
+      marginTop: "12px",
+    },
+    input: {
+      flex: "1",
+      padding: "8px 12px",
+      backgroundColor: "var(--input-background)",
+      border: "none",
+      borderRadius: "4px",
+      color: "var(--text-normal)",
+      fontSize: "14px",
+      outline: "none",
+    },
+    addButton: {
+      backgroundColor: "var(--button-positive-background)",
+      color: "white",
+      border: "none",
+      borderRadius: "3px",
+      padding: "8px 16px",
+      fontSize: "14px",
+      fontWeight: "500",
+      cursor: "pointer",
+      transition: "background-color 0.2s",
+    },
+    emptyState: {
+      color: "var(--text-muted)",
+      fontSize: "14px",
+      fontStyle: "italic",
+      padding: "12px",
+      textAlign: "center",
+      backgroundColor: "var(--background-secondary)",
+      borderRadius: "4px",
+    },
+    description: {
+      color: "var(--text-muted)",
+      fontSize: "14px",
+      marginBottom: "16px",
+      lineHeight: "1.4",
+    },
+  };
+
+  const getModules = () => {
+    if (!UserSettingsProtoStore) {
+      UserSettingsProtoStore = Webpack.getModule(
+        (m) => m?.getName?.() === "UserSettingsProtoStore",
+        { searchExports: true }
+      );
+    }
+    if (!UserSettingsProtoUtils) {
+      UserSettingsProtoUtils = Webpack.getModule(
+        (m) => m?.ProtoClass?.typeName?.endsWith(".PreloadedUserSettings"),
+        { searchExports: true }
+      );
+    }
+    return { UserSettingsProtoStore, UserSettingsProtoUtils };
+  };
+
+  const saveSettings = () => {
+    Data.save(meta.name, "settings", settings);
+  };
+
+  const getCurrentStatus = () => {
+    try {
+      const { UserSettingsProtoStore } = getModules();
+      return (
+        UserSettingsProtoStore?.settings?.status?.status?.value || "online"
+      );
+    } catch {
+      return "online";
+    }
+  };
+
+  const updateStatus = (toStatus) => {
+    if (getCurrentStatus() === toStatus) return;
+
+    try {
+      const { UserSettingsProtoUtils } = getModules();
+      UserSettingsProtoUtils?.updateAsync?.(
+        "status",
+        (statusSetting) => {
+          if (!statusSetting) return;
+          try {
+            statusSetting.status.value = toStatus;
+          } catch {
+            statusSetting.value = toStatus;
+          }
+        },
+        0
+      );
+    } catch (error) {
+      console.error("[GameZen] Error updating status:", error);
+    }
+  };
+
+  const activateDND = () => {
+    if (fakeStatusActivated) return;
+
+    try {
+      lastKnownRealStatus = getCurrentStatus();
+      updateStatus("dnd");
+      fakeStatusActivated = true;
+    } catch (error) {
+      console.error("[GameZen] Error activating DND:", error);
+    }
+  };
+
+  const deactivateDND = () => {
+    if (!fakeStatusActivated) return;
+
+    try {
+      updateStatus(lastKnownRealStatus);
+      lastKnownRealStatus = null;
+      fakeStatusActivated = false;
+    } catch (error) {
+      console.error("[GameZen] Error deactivating DND:", error);
+    }
+  };
+
+  const checkActivity = (LocalActivityStore) => {
+    try {
+      const activity = LocalActivityStore.getPrimaryActivity();
+
+      // No game activity (type 0 = Playing)
+      if (!activity || activity.type !== 0) {
+        return deactivateDND();
+      }
+
+      // Game is in ignored list
+      if (settings.ignoredGames.includes(activity.name)) {
+        return deactivateDND();
+      }
+
+      // Special handling for League of Legends
+      if (
+        activity.name === "League of Legends" &&
+        activity.state !== "In Game"
+      ) {
+        return deactivateDND();
+      }
+
+      activateDND();
+    } catch (error) {
+      console.error("[GameZen] Error checking activity:", error);
+    }
+  };
+
+  const observeActivity = () => {
+    const LocalActivityStore = Webpack.getStore("LocalActivityStore");
+
+    if (!LocalActivityStore) {
+      console.error("[GameZen] LocalActivityStore not found");
+      return;
+    }
+
+    const handleActivityChange = () => {
+      if (scheduledRecheck !== null) {
+        clearTimeout(scheduledRecheck);
+      }
+      scheduledRecheck = setTimeout(() => {
+        scheduledRecheck = null;
+        checkActivity(LocalActivityStore);
+      }, 3000);
     };
-    this.settings = BdApi.loadData(this.meta.name, "settings") || this.defaultSettings;
-  }
 
-  saveSettings() {
-    BdApi.saveData(this.meta.name, "settings", this.settings);
-  }
+    unsubscribe = LocalActivityStore.addChangeListener(handleActivityChange);
 
-  loadSettings() {
-    this.settings = BdApi.loadData(this.meta.name, "settings") || this.defaultSettings;
-  }
+    // Check activity immediately on start
+    checkActivity(LocalActivityStore);
+  };
 
-  getSettingsPanel() {
-    const { React } = BdApi;
-    const { useState } = React;
+  // Settings Panel Component
+  const SettingsPanel = () => {
+    const [ignoredGames, setIgnoredGames] = useState(
+      settings.ignoredGames || []
+    );
+    const [newGame, setNewGame] = useState("");
 
-    const SettingsPanel = ({ settings, saveSettings }) => {
-      const [ignoredGames, setIgnoredGames] = useState(settings.ignoredGames || []);
-      const [newGame, setNewGame] = useState("");
+    const addGame = useCallback(() => {
+      const gameName = newGame.trim();
+      if (gameName.length === 0 || ignoredGames.includes(gameName)) return;
 
-      const addGame = () => {
-        if (newGame.trim().length > 0 && !ignoredGames.includes(newGame.trim())) {
-          const updatedGames = [...ignoredGames, newGame.trim()];
-          setIgnoredGames(updatedGames);
-          settings.ignoredGames = updatedGames;
-          saveSettings();
-          setNewGame("");
-        }
-      };
+      const updatedGames = [...ignoredGames, gameName];
+      setIgnoredGames(updatedGames);
+      settings.ignoredGames = updatedGames;
+      saveSettings();
+      setNewGame("");
+    }, [newGame, ignoredGames]);
 
-      const removeGame = (gameToRemove) => {
-        const updatedGames = ignoredGames.filter((game) => game !== gameToRemove);
+    const removeGame = useCallback(
+      (gameToRemove) => {
+        const updatedGames = ignoredGames.filter(
+          (game) => game !== gameToRemove
+        );
         setIgnoredGames(updatedGames);
         settings.ignoredGames = updatedGames;
         saveSettings();
-      };
+      },
+      [ignoredGames]
+    );
 
-      return React.createElement(
+    const handleKeyPress = useCallback(
+      (e) => {
+        if (e.key === "Enter") addGame();
+      },
+      [addGame]
+    );
+
+    return React.createElement(
+      "div",
+      { style: styles.container },
+      React.createElement("div", { style: styles.title }, "GameZen Settings"),
+      React.createElement(
         "div",
-        { style: { padding: "10px" } },
-        React.createElement("h2", null, "GameZen Settings"),
-        React.createElement(
-          "div",
-          null,
-          React.createElement("h3", null, "Ignored Games:"),
-          React.createElement(
+        { style: styles.description },
+        "Games in this list will not trigger Do Not Disturb mode when launched."
+      ),
+      React.createElement("div", { style: styles.subtitle }, "Ignored Games"),
+      ignoredGames.length === 0
+        ? React.createElement(
+            "div",
+            { style: styles.emptyState },
+            "No games ignored. Add games below to exclude them from auto-DND."
+          )
+        : React.createElement(
             "ul",
-            null,
-            ignoredGames.map((game, index) =>
+            { style: styles.gameList },
+            ignoredGames.map((game) =>
               React.createElement(
                 "li",
-                { key: index, style: { marginBottom: "5px" } },
-                game,
+                { key: game, style: styles.gameItem },
+                React.createElement("span", { style: styles.gameName }, game),
                 React.createElement(
                   "button",
                   {
                     onClick: () => removeGame(game),
-                    style: {
-                      marginLeft: "10px",
-                      padding: "2px 5px",
-                      cursor: "pointer",
+                    style: styles.removeButton,
+                    onMouseEnter: (e) => {
+                      e.target.style.backgroundColor =
+                        "var(--button-danger-background-hover)";
+                    },
+                    onMouseLeave: (e) => {
+                      e.target.style.backgroundColor =
+                        "var(--button-danger-background)";
                     },
                   },
                   "Remove"
@@ -120,185 +331,66 @@ module.exports = class GameZen {
               )
             )
           ),
-          React.createElement(
-            "div",
-            { style: { marginTop: "10px" } },
-            React.createElement("input", {
-              type: "text",
-              value: newGame,
-              onChange: (e) => setNewGame(e.target.value),
-              placeholder: "Add a game",
-              style: { padding: "5px", width: "200px" },
-            }),
-            React.createElement(
-              "button",
-              {
-                onClick: addGame,
-                style: {
-                  marginLeft: "10px",
-                  padding: "5px 10px",
-                  cursor: "pointer",
-                },
-              },
-              "Add"
-            )
-          )
+      React.createElement(
+        "div",
+        { style: styles.inputContainer },
+        React.createElement("input", {
+          type: "text",
+          value: newGame,
+          onChange: (e) => setNewGame(e.target.value),
+          onKeyPress: handleKeyPress,
+          placeholder: "Enter game name...",
+          style: styles.input,
+        }),
+        React.createElement(
+          "button",
+          {
+            onClick: addGame,
+            style: styles.addButton,
+            onMouseEnter: (e) => {
+              e.target.style.backgroundColor =
+                "var(--button-positive-background-hover)";
+            },
+            onMouseLeave: (e) => {
+              e.target.style.backgroundColor =
+                "var(--button-positive-background)";
+            },
+          },
+          "Add"
         )
-      );
-    };
+      )
+    );
+  };
 
-    return React.createElement(SettingsPanel, {
-      settings: this.settings,
-      saveSettings: this.saveSettings.bind(this),
-    });
-  }
-
-  /**
-   * Updates the remote status to the param `toStatus`
-   * @param {('online'|'idle'|'invisible'|'dnd')} toStatus
-   */
-  updateRemoteStatus(toStatus) {
-    if (this.getCurrentRemoteStatus() === toStatus) {
-      return;
-    }
-
-    try {
-      UserSettingsProtoUtils.updateAsync(
-        "status",
-        (statusSetting) => {
-          // not sure why this is sometimes undefined
-          if (!statusSetting) {
-            // ignore errors out of here
-            return;
-          }
-
-          try {
-            statusSetting.status.value = toStatus;
-          } catch (error) {
-            statusSetting.value = toStatus;
-          }
-        },
-        0
-      );
-    } catch (error) {
-      console.error(ERRORS.ERROR_UPDATING_USER_STATUS, error);
-    }
-  }
-
-  /**
-   * @returns {string} the current user status
-   */
-  getCurrentRemoteStatus() {
-    try {
-      return UserSettingsProtoStore.settings.status.status.value;
-    } catch (error) {
-      console.error(ERRORS.ERROR_GETTING_CURRENT_USER_STATUS, error);
-      return "";
-    }
-  }
-
-  /**
-   * Updates the user status to "dnd".
-   */
-  activateFakeStatus() {
-    if (this.fakeStatusActivated) return;
-
-    try {
-      this.lastKnownRealStatus = this.getCurrentRemoteStatus();
-      this.updateRemoteStatus("dnd");
-
-      this.fakeStatusActivated = true;
-    } catch (error) {
-      console.error(ERRORS.ERROR_UPDATING_USER_STATUS_TO_DND, error);
-    }
-  }
-
-  /**
-   * Updates the user status to the current status.
-   */
-  deactivateFakeStatus() {
-    if (this.fakeStatusActivated === false) return;
-
-    try {
-      this.updateRemoteStatus(this.lastKnownRealStatus);
-
-      this.lastKnownRealStatus = null;
-      this.fakeStatusActivated = false;
-    } catch (error) {
-      console.error(ERRORS.ERROR_UPDATING_USER_STATUS_TO_CURRENT_STATUS, error);
-    }
-  }
-
-  /**
-   * Observes changes in activity and updates the status accordingly.
-   */
-  observePresenceChanges() {
-    const LocalActivityStore = BdApi.Webpack.getStore("LocalActivityStore");
-
-    if (!LocalActivityStore) {
-      console.error("LocalActivityStore not found.");
-      return;
-    }
-
-    let currentScheduledRecheck = null;
-
-    const checkActivity = () => {
+  return {
+    start() {
       try {
-        const primaryActivity = LocalActivityStore.getPrimaryActivity();
-        if (!primaryActivity || primaryActivity.type !== 0) {
-          return this.deactivateFakeStatus();
-        }
-
-        if (this.settings.ignoredGames.includes(primaryActivity.name)) {
-          return this.deactivateFakeStatus();
-        }
-
-        // In Lobby, In Champion Select, In Game
-        if (primaryActivity.name === "League of Legends" && primaryActivity.state !== "In Game") {
-          return this.deactivateFakeStatus();
-        }
-
-        this.activateFakeStatus();
+        getModules();
+        observeActivity();
       } catch (error) {
-        console.error("Error checking activity:", error);
+        console.error("[GameZen] Error starting plugin:", error);
       }
-    };
+    },
 
-    this.unsubscribe = LocalActivityStore.addChangeListener(() => {
-      if (currentScheduledRecheck !== null) {
-        clearTimeout(currentScheduledRecheck);
+    stop() {
+      try {
+        if (scheduledRecheck !== null) {
+          clearTimeout(scheduledRecheck);
+          scheduledRecheck = null;
+        }
+        if (unsubscribe) {
+          unsubscribe();
+          unsubscribe = null;
+        }
+        deactivateDND();
+        saveSettings();
+      } catch (error) {
+        console.error("[GameZen] Error stopping plugin:", error);
       }
-      currentScheduledRecheck = setTimeout(() => {
-        currentScheduledRecheck = null;
-        checkActivity();
-      }, 3000); // give time for discord to update and all that
-    });
-  }
+    },
 
-  /**
-   * Activates Do Not Disturb mode when a game is launched.
-   */
-  start() {
-    try {
-      this.loadSettings();
-      this.observePresenceChanges();
-    } catch (error) {
-      console.error(ERRORS.ERROR_STARTING_GAMEZEN, error);
-    }
-  }
-
-  /**
-   * Stops the GameZen plugin by removing the activity change listener and updating the user status to the current status.
-   */
-  stop() {
-    try {
-      if (this.unsubscribe) {
-        this.unsubscribe();
-      }
-      this.deactivateFakeStatus();
-      this.saveSettings();
-    } catch (error) {
-      console.error(ERRORS.ERROR_STOPPING_GAMEZEN, error);
-    }
-  }
+    getSettingsPanel() {
+      return React.createElement(SettingsPanel);
+    },
+  };
 };
