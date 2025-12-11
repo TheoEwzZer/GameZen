@@ -1,17 +1,18 @@
 /**
  * @name GameZen
  * @author Théo EwzZer
+ * @description Automatically activates Do Not Disturb mode when a game is launched.
+ * @version 1.1.2
  * @authorId 384009727253807105
  * @authorLink https://github.com/TheoEwzZer
- * @description Automatically activates Do Not Disturb mode when a game is launched.
  * @donate https://www.paypal.me/TheoEwzZer
  * @source https://github.com/TheoEwzZer/GameZen
+ * @website https://www.theofabiano.com/
  * @updateUrl https://raw.githubusercontent.com/TheoEwzZer/GameZen/main/GameZen.plugin.js
- * @version 1.1.1
  */
 
-module.exports = (meta) => {
-  const { React, Webpack, Data, UI } = BdApi;
+const gameZen = (meta) => {
+  const { React, Webpack, Data } = BdApi;
   const { useState, useCallback } = React;
 
   // Lazy-loaded Webpack modules
@@ -26,11 +27,10 @@ module.exports = (meta) => {
 
   // Settings
   const defaultSettings = { ignoredGames: [] };
-  let settings = Object.assign(
-    {},
-    defaultSettings,
-    Data.load(meta.name, "settings")
-  );
+  let settings = {
+    ...defaultSettings,
+    ...Data.load(meta.name, "settings"),
+  };
 
   // Styles
   const styles = {
@@ -204,7 +204,7 @@ module.exports = (meta) => {
       const activity = LocalActivityStore.getPrimaryActivity();
 
       // No game activity (type 0 = Playing)
-      if (!activity || activity.type !== 0) {
+      if (activity?.type !== 0) {
         return deactivateDND();
       }
 
@@ -394,3 +394,5 @@ module.exports = (meta) => {
     },
   };
 };
+
+module.exports = gameZen;
